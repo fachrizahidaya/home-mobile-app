@@ -1,13 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:homesync/api_client.dart';
+import 'package:homesync/auth_service.dart';
+import 'package:homesync/storage_service.dart';
 import 'package:provider/provider.dart';
 import 'core/constants/app_colors.dart';
 import 'providers/auth_provider.dart';
-import 'presentation/screens/login_screen.dart';
-import 'presentation/screens/dashboard/member_dashboard_screen.dart';
+import 'presentation/screens/login/index.dart';
+import 'presentation/screens/dashboard/index.dart';
 
 void main() {
   runApp(const HomeSyncApp());
 }
+
+final storage = StorageService();
+
+final apiClient = ApiClient(
+  baseUrl: 'http://localhost:8000/api',
+  storage: storage,
+);
+
+final authService = AuthService(apiClient);
 
 class HomeSyncApp extends StatelessWidget {
   const HomeSyncApp({super.key});
@@ -51,7 +63,11 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _checkAuthStatus();
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) {
+        _checkAuthStatus();
+      },
+    );
   }
 
   Future<void> _checkAuthStatus() async {

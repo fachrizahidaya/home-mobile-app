@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:homesync/core/constants/theme.dart';
-import 'package:provider/provider.dart';
+import 'package:homesync/main.dart';
+import 'package:homesync/storage_service.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/utils/validators.dart';
-import '../../providers/auth_provider.dart';
-import '../widgets/custom_button.dart';
-import '../widgets/custom_text_field.dart';
-import 'register_screen.dart';
-import 'otp_verification_screen.dart';
-import 'dashboard/member_dashboard_screen.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/validators.dart';
+import '../../widgets/custom_button.dart';
+import '../../widgets/custom_text_field.dart';
+import '../register/index.dart';
+import '../verify/index.dart';
+import '../dashboard/index.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -22,6 +22,9 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final storage = StorageService();
+
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -30,44 +33,51 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  void showSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+      ),
+    );
+  }
+
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    setState(() => _isLoading = true);
 
-    final success = await authProvider.login(
+    final response = await authService.login(
       email: _emailController.text.trim(),
       password: _passwordController.text,
     );
 
     if (!mounted) return;
 
-    if (!success) {
-      Fluttertoast.showToast(
-        msg: authProvider.errorMessage ?? 'Login failed',
-        backgroundColor: AppColors.error,
-        textColor: AppColors.white,
-      );
-      return;
-    }
+    setState(() => _isLoading = false);
 
-    final pendingEmail = await authProvider.getPendingEmail();
+    if (response.success) {
+      await storage.saveToken(response.data!['access_token']);
 
-    if (!mounted) return;
-
-    if (pendingEmail != null) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => OtpVerificationScreen(email: pendingEmail),
-        ),
-      );
-    } else {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (_) => const MemberDashboardScreen(),
         ),
+      );
+    } else if (response.requiresVerification == true) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => OtpVerificationScreen(
+            email: response.email ?? _emailController.text.trim(),
+          ),
+        ),
+      );
+    } else {
+      Fluttertoast.showToast(
+        msg: response.message,
+        backgroundColor: AppColors.error,
+        textColor: AppColors.white,
       );
     }
   }
@@ -85,7 +95,6 @@ class _LoginScreenState extends State<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 40),
-                // Logo or App Name
                 Center(
                   child: Column(
                     spacing: CustomTheme().vGap('3xl'),
@@ -93,19 +102,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       Column(
                         spacing: CustomTheme().vGap('2xl'),
                         children: [
-                          Container(
-                            width: 80,
-                            height: 80,
-                            decoration: BoxDecoration(
-                              color: AppColors.primary,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Icon(
-                              Icons.home_rounded,
-                              size: 50,
-                              color: AppColors.white,
-                            ),
-                          ),
                           Column(
                             spacing: CustomTheme().vGap('m'),
                             children: [
@@ -179,19 +175,11 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ],
                           ),
-
-                          // Login Button
-                          Consumer<AuthProvider>(
-                            builder: (context, authProvider, child) {
-                              return CustomButton(
-                                text: 'Sign In',
-                                onPressed: _handleLogin,
-                                isLoading: authProvider.isLoading,
-                              );
-                            },
+                          CustomButton(
+                            text: 'Sign In',
+                            onPressed: _handleLogin,
+                            isLoading: _isLoading,
                           ),
-
-                          // Register Link
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [

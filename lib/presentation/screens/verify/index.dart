@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:homesync/core/constants/theme.dart';
-import 'package:provider/provider.dart';
+import 'package:homesync/main.dart';
+import 'package:homesync/presentation/screens/login/index.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:pinput/pinput.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_constants.dart';
-import '../../providers/auth_provider.dart';
-import '../widgets/custom_button.dart';
-import 'dashboard/member_dashboard_screen.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_constants.dart';
+import '../../widgets/custom_button.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   final String email;
@@ -24,7 +23,9 @@ class OtpVerificationScreen extends StatefulWidget {
 class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   final _otpController = TextEditingController();
   bool _canResend = true;
-  int _resendCountdown = 60;
+  int _resendCountdown = 90;
+  bool _isVerifying = false;
+  bool _isResending = false;
 
   @override
   void dispose() {
@@ -35,23 +36,27 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   void _startResendCountdown() {
     setState(() {
       _canResend = false;
-      _resendCountdown = 60;
+      _resendCountdown = 90;
     });
 
-    Future.delayed(const Duration(seconds: 1), () {
-      _updateCountdown();
-    });
+    _updateCountdown();
   }
 
   void _updateCountdown() {
-    if (_resendCountdown > 0) {
-      setState(() => _resendCountdown--);
-      Future.delayed(const Duration(seconds: 1), () {
+    Future.delayed(const Duration(seconds: 1), () {
+      if (!mounted) return;
+
+      if (_resendCountdown > 0) {
+        setState(() {
+          _resendCountdown--;
+        });
         _updateCountdown();
-      });
-    } else {
-      setState(() => _canResend = true);
-    }
+      } else {
+        setState(() {
+          _canResend = true;
+        });
+      }
+    });
   }
 
   Future<void> _handleVerifyOtp() async {
@@ -64,59 +69,68 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       return;
     }
 
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    if (_isVerifying) return;
 
-    final success = await authProvider.verifyOtp(
+    setState(() => _isVerifying = true);
+
+    final response = await authService.verifyOtp(
       email: widget.email,
       otp: _otpController.text,
     );
 
     if (!mounted) return;
 
-    if (success) {
+    setState(() => _isVerifying = false);
+
+    if (response.success) {
+      await storage.saveToken(response.data!['access_token']);
+
       Fluttertoast.showToast(
         msg: 'Verification successful!',
         backgroundColor: AppColors.success,
         textColor: AppColors.white,
       );
 
-      // Navigate to dashboard
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(
-          builder: (context) => const MemberDashboardScreen(),
-        ),
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
         (route) => false,
       );
     } else {
       Fluttertoast.showToast(
-        msg: authProvider.errorMessage ?? 'Verification failed',
+        msg: response.message,
         backgroundColor: AppColors.error,
         textColor: AppColors.white,
       );
+
       _otpController.clear();
     }
   }
 
   Future<void> _handleResendOtp() async {
-    if (!_canResend) return;
+    if (!_canResend || _isResending) return;
 
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    setState(() => _isResending = true);
 
-    final success = await authProvider.resendOtp(widget.email);
+    final response = await authService.resendOtp(
+      email: widget.email,
+    );
 
     if (!mounted) return;
 
-    if (success) {
+    setState(() => _isResending = false);
+
+    if (response.success) {
       Fluttertoast.showToast(
         msg: 'OTP sent successfully!',
         backgroundColor: AppColors.success,
         textColor: AppColors.white,
       );
+
       _startResendCountdown();
     } else {
       Fluttertoast.showToast(
-        msg: authProvider.errorMessage ?? 'Failed to resend OTP',
+        msg: response.message,
         backgroundColor: AppColors.error,
         textColor: AppColors.white,
       );
@@ -158,7 +172,11 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const LoginScreen()),
+            (route) => false,
+          ),
         ),
       ),
       body: SafeArea(
@@ -169,7 +187,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
             spacing: CustomTheme().vGap('2xl'),
             children: [
               const SizedBox(height: 20),
-              // Icon
               Container(
                 width: 80,
                 height: 80,
@@ -183,7 +200,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                   color: AppColors.primary,
                 ),
               ),
-              // Header
               const Text(
                 'Verify Your Email',
                 style: TextStyle(
@@ -212,7 +228,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                   ),
                 ],
               ),
-              // OTP Input
               Pinput(
                 controller: _otpController,
                 length: AppConstants.otpLength,
@@ -223,38 +238,32 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 showCursor: true,
                 onCompleted: (pin) => _handleVerifyOtp(),
               ),
-              // Verify Button
-              Consumer<AuthProvider>(
-                builder: (context, authProvider, child) {
-                  return CustomButton(
-                    text: 'Verify',
-                    onPressed: _handleVerifyOtp,
-                    isLoading: authProvider.isLoading,
-                  );
-                },
-              ),
-              // Resend OTP
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              // CustomButton(
+              //   text: 'Verify',
+              //   onPressed: _handleVerifyOtp,
+              //   isLoading: _isVerifying,
+              // ),
+              Column(
                 children: [
-                  Text(
-                    "Didn't receive code? ",
-                    style: TextStyle(
-                      fontSize: CustomTheme().fontSize('l'),
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: _canResend ? _handleResendOtp : null,
-                    child: Text(
-                      _canResend ? 'Resend' : 'Resend in ${_resendCountdown}s',
-                      style: TextStyle(
-                        fontSize: CustomTheme().fontSize('l'),
-                        fontWeight: CustomTheme().fontWeight('semibold'),
-                        color:
-                            _canResend ? AppColors.primary : AppColors.textHint,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        "Didn't receive code? ",
+                        style: TextStyle(
+                          fontSize: CustomTheme().fontSize('l'),
+                          color: AppColors.textSecondary,
+                        ),
                       ),
-                    ),
+                    ],
+                  ),
+                  SizedBox(height: 8),
+                  CustomButton(
+                    text: _canResend
+                        ? 'Resend OTP'
+                        : 'Resend in ${_resendCountdown}s',
+                    onPressed: _handleResendOtp,
+                    isLoading: _isResending,
                   ),
                 ],
               ),

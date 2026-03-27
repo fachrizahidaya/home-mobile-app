@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:homesync/core/constants/theme.dart';
-import 'package:provider/provider.dart';
+import 'package:homesync/main.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import '../../core/constants/app_colors.dart';
-import '../../core/utils/validators.dart';
-import '../../providers/auth_provider.dart';
-import '../widgets/custom_button.dart';
-import '../widgets/custom_text_field.dart';
-import 'otp_verification_screen.dart';
+import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/validators.dart';
+import '../../widgets/custom_button.dart';
+import '../../widgets/custom_text_field.dart';
+import '../verify/index.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -22,9 +21,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _usernameController = TextEditingController();
-  bool _isCheckingUsername = false;
-  bool _usernameAvailable = true;
+
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _passwordController.addListener(_onPasswordChanged);
+    _confirmPasswordController.addListener(_onPasswordChanged);
+  }
+
+  void _onPasswordChanged() {
+    setState(() {}); // trigger UI update
+  }
+
+  bool get _isPasswordMismatch {
+    return _confirmPasswordController.text.isNotEmpty &&
+        _passwordController.text != _confirmPasswordController.text;
+  }
 
   @override
   void dispose() {
@@ -32,22 +47,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _usernameController.dispose();
     super.dispose();
-  }
-
-  Future<void> _checkUsername(String username) async {
-    if (username.length >= 3) {
-      setState(() => _isCheckingUsername = true);
-
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final available = await authProvider.checkUsernameAvailability(username);
-
-      setState(() {
-        _usernameAvailable = available;
-        _isCheckingUsername = false;
-      });
-    }
   }
 
   String? _validateConfirmPassword(String? value) {
@@ -61,51 +61,42 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _handleRegister() async {
-    if (_formKey.currentState!.validate()) {
-      if (!_usernameAvailable) {
-        Fluttertoast.showToast(
-          msg: 'Username already exists. Please choose another.',
-          backgroundColor: AppColors.error,
-          textColor: AppColors.white,
-        );
-        return;
-      }
+    if (!_formKey.currentState!.validate()) return;
 
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    setState(() => _isLoading = true);
 
-      final success = await authProvider.register(
-        name: _nameController.text.trim(),
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-        passwordConfirmation: _confirmPasswordController.text,
-        username: _usernameController.text.trim(),
+    final response = await authService.api.post('/auth/register', {
+      'name': _nameController.text.trim(),
+      'email': _emailController.text.trim(),
+      'password': _passwordController.text,
+      'password_confirmation': _confirmPasswordController.text,
+    });
+
+    if (!mounted) return;
+
+    setState(() => _isLoading = false);
+
+    if (response.success) {
+      Fluttertoast.showToast(
+        msg: 'Registration successful! Please verify OTP sent to your email.',
+        backgroundColor: AppColors.success,
+        textColor: AppColors.white,
       );
 
-      if (!mounted) return;
-
-      if (success) {
-        Fluttertoast.showToast(
-          msg: 'Registration successful! Please verify OTP sent to your email.',
-          backgroundColor: AppColors.success,
-          textColor: AppColors.white,
-        );
-
-        // Navigate to OTP verification
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => OtpVerificationScreen(
-              email: _emailController.text.trim(),
-            ),
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => OtpVerificationScreen(
+            email: _emailController.text.trim(),
           ),
-        );
-      } else {
-        Fluttertoast.showToast(
-          msg: authProvider.errorMessage ?? 'Registration failed',
-          backgroundColor: AppColors.error,
-          textColor: AppColors.white,
-        );
-      }
+        ),
+      );
+    } else {
+      Fluttertoast.showToast(
+        msg: response.message,
+        backgroundColor: AppColors.error,
+        textColor: AppColors.white,
+      );
     }
   }
 
@@ -174,46 +165,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           color: AppColors.textSecondary),
                     ),
                     CustomTextField(
-                      controller: _usernameController,
-                      label: 'Username',
-                      hint: 'Choose a username',
-                      validator: Validators.validateUsername,
-                      onChanged: (value) => _checkUsername(value),
-                      prefixIcon: const Icon(Icons.account_circle_outlined,
-                          color: AppColors.textSecondary),
-                      suffixIcon: _isCheckingUsername
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: Padding(
-                                padding: EdgeInsets.all(12.0),
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2),
-                              ),
-                            )
-                          : _usernameController.text.length >= 3
-                              ? Icon(
-                                  _usernameAvailable
-                                      ? Icons.check_circle
-                                      : Icons.cancel,
-                                  color: _usernameAvailable
-                                      ? AppColors.success
-                                      : AppColors.error,
-                                )
-                              : null,
-                    ),
-                    if (!_usernameAvailable &&
-                        _usernameController.text.length >= 3)
-                      Padding(
-                        padding: CustomTheme().padding('warning-text'),
-                        child: Text(
-                          'Username already exists',
-                          style: TextStyle(
-                            color: AppColors.error,
-                          ),
-                        ),
-                      ),
-                    CustomTextField(
                       controller: _passwordController,
                       label: 'Password',
                       hint: 'Enter your password',
@@ -230,19 +181,38 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       validator: _validateConfirmPassword,
                       prefixIcon: const Icon(Icons.lock_outlined,
                           color: AppColors.textSecondary),
+
+                      // 👇 ADD THIS
+                      suffixIcon: _confirmPasswordController.text.isEmpty
+                          ? null
+                          : Icon(
+                              _isPasswordMismatch
+                                  ? Icons.cancel
+                                  : Icons.check_circle,
+                              color: _isPasswordMismatch
+                                  ? AppColors.error
+                                  : AppColors.success,
+                            ),
                     ),
+                    if (_isPasswordMismatch)
+                      Padding(
+                        padding: CustomTheme().padding('warning-text'),
+                        child: Text(
+                          'Passwords do not match',
+                          style: TextStyle(
+                            color: AppColors.error,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
 
                 // Register Button
-                Consumer<AuthProvider>(
-                  builder: (context, authProvider, child) {
-                    return CustomButton(
-                      text: 'Sign Up',
-                      onPressed: _handleRegister,
-                      isLoading: authProvider.isLoading,
-                    );
-                  },
+                CustomButton(
+                  text: 'Sign Up',
+                  onPressed: _handleRegister,
+                  isLoading: _isLoading,
                 ),
 
                 // Login Link

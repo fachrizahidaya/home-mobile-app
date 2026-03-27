@@ -3,18 +3,18 @@ class User {
   final String username;
   final String email;
   final String role;
-  final DateTime? emailVerifiedAt;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final bool isVerified;
 
   User({
     required this.id,
     required this.username,
     required this.email,
     required this.role,
-    this.emailVerifiedAt,
     required this.createdAt,
     required this.updatedAt,
+    required this.isVerified,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -23,9 +23,7 @@ class User {
       username: json['username'] as String,
       email: json['email'] as String,
       role: json['role'] as String? ?? 'member',
-      emailVerifiedAt: json['email_verified_at'] != null
-          ? DateTime.parse(json['email_verified_at'])
-          : null,
+      isVerified: json['is_verified'] as bool? ?? false,
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
     );
@@ -37,7 +35,7 @@ class User {
       'username': username,
       'email': email,
       'role': role,
-      'email_verified_at': emailVerifiedAt?.toIso8601String(),
+      'is_verified': isVerified,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -45,5 +43,5 @@ class User {
 
   bool get isAdmin => role == 'admin';
   bool get isMember => role == 'member';
-  bool get isEmailVerified => emailVerifiedAt != null;
+  bool get isEmailVerified => isVerified;
 }
