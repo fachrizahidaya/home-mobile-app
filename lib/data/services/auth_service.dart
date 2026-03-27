@@ -14,7 +14,6 @@ class AuthService {
     required String email,
     required String password,
     required String passwordConfirmation,
-    required String username,
     required String name,
   }) async {
     try {
@@ -25,16 +24,13 @@ class AuthService {
           'email': email,
           'password': password,
           'password_confirmation': passwordConfirmation,
-          'username': username,
-          'role': 'member',
         },
       );
 
       final authResponse = AuthResponse.fromJson(response.data);
 
-      // If registration successful and requires OTP
-      if (authResponse.success && authResponse.requiresOtp == true) {
-        // Store email temporarily for OTP verification
+      // After registration, user needs to verify OTP
+      if (authResponse.success) {
         await _storageService.saveString('pending_email', email);
       }
 
@@ -55,7 +51,7 @@ class AuthService {
     }
   }
 
-  // Verify OTP
+  // Verify OTP (for both registration and login)
   Future<AuthResponse> verifyOtp({
     required String email,
     required String otp,
@@ -75,7 +71,7 @@ class AuthService {
         // Save token
         await _storageService.saveToken(authResponse.token!);
 
-        // Save user data if available
+        // Save user data
         if (authResponse.data != null && authResponse.data!['user'] != null) {
           final user = User.fromJson(authResponse.data!['user']);
           await _storageService.saveUser(user);
@@ -144,19 +140,19 @@ class AuthService {
       final authResponse = AuthResponse.fromJson(response.data);
 
       if (authResponse.success) {
-        if (authResponse.requiresOtp == true) {
-          // User needs to verify OTP
-          await _storageService.saveString('pending_email', email);
-        } else if (authResponse.token != null) {
-          // Login successful with token
-          await _storageService.saveToken(authResponse.token!);
-          await _storageService.saveToken(authResponse.token!);
-
+        // User is verified and authenticated
+        if (authResponse.data!['user']['access_token'] != null) {
+          await _storageService
+              .saveToken(authResponse.data!['user']['access_token']);
           if (authResponse.data != null && authResponse.data!['user'] != null) {
             final user = User.fromJson(authResponse.data!['user']);
             await _storageService.saveUser(user);
           }
         }
+      } else if (authResponse.requiresVerification) {
+        // User exists but not verified - store email for OTP flow
+        await _storageService.saveString(
+            'pending_email', authResponse.data!['user']['email']);
       }
 
       return authResponse;

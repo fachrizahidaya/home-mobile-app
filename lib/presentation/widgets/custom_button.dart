@@ -12,6 +12,7 @@ class CustomButton extends StatelessWidget {
   final double? width;
   final double height;
   final EdgeInsetsGeometry? padding;
+  final bool isDisabled;
 
   const CustomButton({
     super.key,
@@ -24,6 +25,7 @@ class CustomButton extends StatelessWidget {
     this.width,
     this.height = 50,
     this.padding,
+    this.isDisabled = false,
   });
 
   @override
@@ -56,7 +58,7 @@ class CustomButton extends StatelessWidget {
                     ),
             )
           : ElevatedButton(
-              onPressed: isLoading ? null : onPressed,
+              onPressed: isDisabled || isLoading ? null : onPressed,
               style: ElevatedButton.styleFrom(
                 backgroundColor: color ?? AppColors.primary,
                 shape: RoundedRectangleBorder(

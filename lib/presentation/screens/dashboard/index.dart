@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:homesync/main.dart';
+import 'package:homesync/storage_service.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../providers/auth_provider.dart';
-import '../login_screen.dart';
+import '../login/index.dart';
 
 class MemberDashboardScreen extends StatefulWidget {
   const MemberDashboardScreen({super.key});
@@ -12,6 +14,8 @@ class MemberDashboardScreen extends StatefulWidget {
 }
 
 class _MemberDashboardScreenState extends State<MemberDashboardScreen> {
+  final storage = StorageService();
+
   int _selectedIndex = 0;
 
   final List<Widget> _pages = [
@@ -25,6 +29,24 @@ class _MemberDashboardScreenState extends State<MemberDashboardScreen> {
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.user;
+
+    Future<void> logout() async {
+      try {
+        await authService.logout(); // call API
+      } catch (e) {
+        // optional: ignore error (token might already be invalid)
+      }
+
+      await storage.clearToken(); // clear local token
+
+      if (!mounted) return;
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false,
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -44,15 +66,7 @@ class _MemberDashboardScreenState extends State<MemberDashboardScreen> {
             icon: const Icon(Icons.more_vert, color: AppColors.white),
             onSelected: (value) async {
               if (value == 'logout') {
-                await authProvider.logout();
-                if (!context.mounted) return;
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const LoginScreen(),
-                  ),
-                  (route) => false,
-                );
+                logout();
               }
             },
             itemBuilder: (context) => [
@@ -104,7 +118,8 @@ class _MemberDashboardScreenState extends State<MemberDashboardScreen> {
                 ),
                 const SizedBox(height: 4),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: AppColors.white.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(8),
@@ -354,7 +369,8 @@ class GroceriesTab extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.shopping_cart_outlined, size: 64, color: AppColors.textHint),
+                Icon(Icons.shopping_cart_outlined,
+                    size: 64, color: AppColors.textHint),
                 const SizedBox(height: 16),
                 const Text(
                   'No grocery items yet',
