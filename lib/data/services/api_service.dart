@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import '../../core/constants/app_constants.dart';
+import '../../ui/core/constants/app_constants.dart';
 import 'storage_service.dart';
 
 class ApiService {

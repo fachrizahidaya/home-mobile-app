@@ -1,5 +1,5 @@
 import 'package:email_validator/email_validator.dart';
-import '../constants/app_constants.dart';
+import '../../ui/core/constants/app_constants.dart';
 
 class Validators {
   static String? validateEmail(String? value) {

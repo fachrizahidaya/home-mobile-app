@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:homesync/core/constants/app_constants.dart';
+import 'package:homesync/ui/core/constants/app_constants.dart';
 import 'package:homesync/data/services/api_service.dart';
 import '../../data/models/user_model.dart';
 import '../../data/services/auth_service.dart';

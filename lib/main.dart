@@ -3,7 +3,7 @@ import 'package:homesync/api_client.dart';
 import 'package:homesync/auth_service.dart';
 import 'package:homesync/storage_service.dart';
 import 'package:provider/provider.dart';
-import 'core/constants/app_colors.dart';
+import 'ui/core/constants/app_colors.dart';
 import 'providers/auth_provider.dart';
 import 'presentation/screens/login/index.dart';
 import 'presentation/screens/dashboard/index.dart';

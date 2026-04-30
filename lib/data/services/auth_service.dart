@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import '../../core/constants/app_constants.dart';
+import '../../ui/core/constants/app_constants.dart';
 import '../models/user_model.dart';
 import '../models/auth_response.dart';
 import 'api_service.dart';

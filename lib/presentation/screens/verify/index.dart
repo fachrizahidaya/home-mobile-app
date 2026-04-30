@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:homesync/core/constants/theme.dart';
+import 'package:homesync/ui/core/constants/theme.dart';
 import 'package:homesync/main.dart';
 import 'package:homesync/presentation/screens/login/index.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:pinput/pinput.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_constants.dart';
+import '../../../ui/core/constants/app_colors.dart';
+import '../../../ui/core/constants/app_constants.dart';
 import '../../widgets/custom_button.dart';
 
 class OtpVerificationScreen extends StatefulWidget {

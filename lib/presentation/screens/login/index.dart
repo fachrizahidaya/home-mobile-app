@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:homesync/core/constants/theme.dart';
+import 'package:homesync/ui/core/constants/theme.dart';
 import 'package:homesync/main.dart';
 import 'package:homesync/storage_service.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../../core/utils/validators.dart';
+import '../../../ui/core/constants/app_colors.dart';
+import '../../../utils/utils/validators.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../register/index.dart';

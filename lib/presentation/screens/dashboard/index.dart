@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:homesync/main.dart';
 import 'package:homesync/storage_service.dart';
 import 'package:provider/provider.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../../ui/core/constants/app_colors.dart';
 import '../../../providers/auth_provider.dart';
 import '../login/index.dart';
 
