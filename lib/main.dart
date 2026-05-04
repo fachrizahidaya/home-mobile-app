@@ -7,6 +7,7 @@ import 'ui/core/constants/app_colors.dart';
 import 'providers/auth_provider.dart';
 import 'presentation/screens/login/index.dart';
 import 'presentation/screens/dashboard/index.dart';
+import 'presentation/screens/verify/index.dart';
 
 void main() {
   runApp(const HomeSyncApp());
@@ -82,6 +83,16 @@ class _SplashScreenState extends State<SplashScreen> {
         context,
         MaterialPageRoute(
           builder: (context) => const MemberDashboardScreen(),
+        ),
+      );
+    } else if (authProvider.needsVerification &&
+        authProvider.pendingEmail != null) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => OtpVerificationScreen(
+            email: authProvider.pendingEmail!,
+          ),
         ),
       );
     } else {

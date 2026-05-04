@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:homesync/providers/auth_provider.dart';
 import 'package:homesync/ui/core/constants/theme.dart';
-import 'package:homesync/main.dart';
 import 'package:homesync/presentation/screens/login/index.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:pinput/pinput.dart';
+import 'package:provider/provider.dart';
 import '../../../ui/core/constants/app_colors.dart';
 import '../../../ui/core/constants/app_constants.dart';
 import '../../widgets/custom_button.dart';
+import '../dashboard/index.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   final String email;
@@ -24,7 +26,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   final _otpController = TextEditingController();
   bool _canResend = true;
   int _resendCountdown = 90;
-  bool _isVerifying = false;
   bool _isResending = false;
 
   @override
@@ -69,22 +70,17 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       return;
     }
 
-    if (_isVerifying) return;
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    if (authProvider.isLoading) return;
 
-    setState(() => _isVerifying = true);
-
-    final response = await authService.verifyOtp(
+    final success = await authProvider.verifyOtp(
       email: widget.email,
       otp: _otpController.text,
     );
 
     if (!mounted) return;
 
-    setState(() => _isVerifying = false);
-
-    if (response.success) {
-      await storage.saveToken(response.data!['access_token']);
-
+    if (success) {
       Fluttertoast.showToast(
         msg: 'Verification successful!',
         backgroundColor: AppColors.success,
@@ -93,12 +89,12 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        MaterialPageRoute(builder: (_) => const MemberDashboardScreen()),
         (route) => false,
       );
     } else {
       Fluttertoast.showToast(
-        msg: response.message,
+        msg: authProvider.errorMessage ?? 'OTP verification failed',
         backgroundColor: AppColors.error,
         textColor: AppColors.white,
       );
@@ -112,15 +108,14 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
     setState(() => _isResending = true);
 
-    final response = await authService.resendOtp(
-      email: widget.email,
-    );
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final response = await authProvider.resendOtp(email: widget.email);
 
     if (!mounted) return;
 
     setState(() => _isResending = false);
 
-    if (response.success) {
+    if (response) {
       Fluttertoast.showToast(
         msg: 'OTP sent successfully!',
         backgroundColor: AppColors.success,
@@ -130,7 +125,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       _startResendCountdown();
     } else {
       Fluttertoast.showToast(
-        msg: response.message,
+        msg: authProvider.errorMessage ?? 'Failed to resend OTP',
         backgroundColor: AppColors.error,
         textColor: AppColors.white,
       );
@@ -139,6 +134,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isVerifying = context.watch<AuthProvider>().isLoading;
+
     final defaultPinTheme = PinTheme(
       width: 56,
       height: 56,
@@ -160,7 +157,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
     final submittedPinTheme = defaultPinTheme.copyWith(
       decoration: defaultPinTheme.decoration?.copyWith(
-        color: AppColors.primaryLight.withOpacity(0.1),
+        color: AppColors.primaryLight.withValues(alpha: 0.1),
         border: Border.all(color: AppColors.primary),
       ),
     );
@@ -191,7 +188,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 width: 80,
                 height: 80,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: const Icon(
@@ -238,11 +235,11 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 showCursor: true,
                 onCompleted: (pin) => _handleVerifyOtp(),
               ),
-              // CustomButton(
-              //   text: 'Verify',
-              //   onPressed: _handleVerifyOtp,
-              //   isLoading: _isVerifying,
-              // ),
+              CustomButton(
+                text: 'Verify',
+                onPressed: _handleVerifyOtp,
+                isLoading: isVerifying,
+              ),
               Column(
                 children: [
                   Row(

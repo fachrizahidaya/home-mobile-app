@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:homesync/main.dart';
-import 'package:homesync/storage_service.dart';
 import 'package:provider/provider.dart';
 import '../../../ui/core/constants/app_colors.dart';
 import '../../../providers/auth_provider.dart';
@@ -14,8 +12,6 @@ class MemberDashboardScreen extends StatefulWidget {
 }
 
 class _MemberDashboardScreenState extends State<MemberDashboardScreen> {
-  final storage = StorageService();
-
   int _selectedIndex = 0;
 
   final List<Widget> _pages = [
@@ -31,15 +27,9 @@ class _MemberDashboardScreenState extends State<MemberDashboardScreen> {
     final user = authProvider.user;
 
     Future<void> logout() async {
-      try {
-        await authService.logout(); // call API
-      } catch (e) {
-        // optional: ignore error (token might already be invalid)
-      }
+      await authProvider.logout();
 
-      await storage.clearToken(); // clear local token
-
-      if (!mounted) return;
+      if (!context.mounted) return;
 
       Navigator.pushAndRemoveUntil(
         context,
@@ -104,12 +94,12 @@ class _MemberDashboardScreenState extends State<MemberDashboardScreen> {
                   'Welcome back,',
                   style: TextStyle(
                     fontSize: 14,
-                    color: AppColors.white.withOpacity(0.9),
+                    color: AppColors.white.withValues(alpha: 0.9),
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  user?.username ?? 'Member',
+                  user?.name ?? 'Member',
                   style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -121,7 +111,7 @@ class _MemberDashboardScreenState extends State<MemberDashboardScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppColors.white.withOpacity(0.2),
+                    color: AppColors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -265,7 +255,7 @@ class DashboardHomeTab extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppColors.border.withOpacity(0.5),
+            color: AppColors.border.withValues(alpha: 0.5),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -277,7 +267,7 @@ class DashboardHomeTab extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: color, size: 24),

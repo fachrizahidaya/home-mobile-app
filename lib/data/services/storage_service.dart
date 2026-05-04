@@ -16,14 +16,27 @@ class StorageService {
   // Token Management
   Future<void> saveToken(String token) async {
     await _secureStorage.write(key: AppConstants.tokenKey, value: token);
+    await init();
+    await _prefs!.setString(AppConstants.tokenKey, token);
   }
 
   Future<String?> getToken() async {
-    return await _secureStorage.read(key: AppConstants.tokenKey);
+    final secureToken = await _secureStorage.read(key: AppConstants.tokenKey);
+    if (secureToken != null) return secureToken;
+
+    await init();
+    final legacyToken = _prefs!.getString(AppConstants.tokenKey);
+    if (legacyToken != null) {
+      await _secureStorage.write(
+          key: AppConstants.tokenKey, value: legacyToken);
+    }
+    return legacyToken;
   }
 
   Future<void> deleteToken() async {
     await _secureStorage.delete(key: AppConstants.tokenKey);
+    await init();
+    await _prefs!.remove(AppConstants.tokenKey);
   }
 
   // User Management

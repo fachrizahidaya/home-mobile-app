@@ -20,6 +20,8 @@ class _AuthCheckState extends State<AuthCheck> {
   Future<void> checkAuth() async {
     final token = await storage.getToken();
 
+    if (!mounted) return;
+
     if (token != null) {
       Navigator.pushReplacementNamed(context, '/home');
     } else {

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:homesync/providers/auth_provider.dart';
 import 'package:homesync/ui/core/constants/theme.dart';
-import 'package:homesync/main.dart';
-import 'package:homesync/storage_service.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:provider/provider.dart';
 import '../../../ui/core/constants/app_colors.dart';
 import '../../../utils/utils/validators.dart';
 import '../../widgets/custom_button.dart';
@@ -22,9 +22,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final storage = StorageService();
-
-  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -42,40 +39,36 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleLogin() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isLoading = true);
-
-    final response = await authService.login(
+    final result = await authProvider.login(
       email: _emailController.text.trim(),
       password: _passwordController.text,
     );
 
     if (!mounted) return;
 
-    setState(() => _isLoading = false);
-
-    if (response.success) {
-      await storage.saveToken(response.data!['access_token']);
-
+    if (result.success) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (_) => const MemberDashboardScreen(),
         ),
       );
-    } else if (response.requiresVerification == true) {
+    } else if (result.needsVerification == true) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (_) => OtpVerificationScreen(
-            email: response.email ?? _emailController.text.trim(),
+            email: result.email ?? _emailController.text.trim(),
           ),
         ),
       );
     } else {
       Fluttertoast.showToast(
-        msg: response.message,
+        msg: result.message ?? authProvider.errorMessage ?? 'Login failed',
         backgroundColor: AppColors.error,
         textColor: AppColors.white,
       );
@@ -84,6 +77,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isLoading = context.watch<AuthProvider>().isLoading;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -178,7 +173,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           CustomButton(
                             text: 'Sign In',
                             onPressed: _handleLogin,
-                            isLoading: _isLoading,
+                            isLoading: isLoading,
                           ),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,

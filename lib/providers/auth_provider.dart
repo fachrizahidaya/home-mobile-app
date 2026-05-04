@@ -41,10 +41,16 @@ class AuthProvider with ChangeNotifier {
       if (token != null) {
         _user = await _storageService.getUser();
         _authState = AuthState.authenticated;
+        _pendingEmail = null;
       } else {
-        _authState = AuthState.unauthenticated;
+        _user = null;
+        _pendingEmail = await _storageService.getString('pending_email');
+        _authState = _pendingEmail != null
+            ? AuthState.needsVerification
+            : AuthState.unauthenticated;
       }
     } catch (e) {
+      _user = null;
       _authState = AuthState.unauthenticated;
     } finally {
       _setLoading(false);
@@ -57,6 +63,7 @@ class AuthProvider with ChangeNotifier {
     required String password,
     required String passwordConfirmation,
     required String name,
+    required String username,
   }) async {
     _setLoading(true);
     _clearError();
@@ -67,6 +74,7 @@ class AuthProvider with ChangeNotifier {
         email: email,
         password: password,
         passwordConfirmation: passwordConfirmation,
+        username: username,
       );
 
       if (response.success) {
@@ -101,9 +109,10 @@ class AuthProvider with ChangeNotifier {
 
       if (response.success) {
         // User is verified and authenticated
-        _user = response.data!['user'] != null
-            ? User.fromJson(response.data!['user'])
+        _user = response.data?['user'] != null
+            ? User.fromJson(Map<String, dynamic>.from(response.data!['user']))
             : null;
+        _pendingEmail = null;
         _authState = AuthState.authenticated;
         return LoginResult(
             success: true, message: response.message, needsVerification: false);
@@ -115,6 +124,7 @@ class AuthProvider with ChangeNotifier {
           success: false,
           needsVerification: true,
           message: response.message,
+          email: response.email ?? email,
         );
       } else {
         _setError(response.message);
@@ -148,7 +158,7 @@ class AuthProvider with ChangeNotifier {
 
       if (response.success && response.token != null) {
         _user = response.data?['user'] != null
-            ? User.fromJson(response.data!['user'])
+            ? User.fromJson(Map<String, dynamic>.from(response.data!['user']))
             : null;
         _pendingEmail = null;
         _authState = AuthState.authenticated;
@@ -166,8 +176,10 @@ class AuthProvider with ChangeNotifier {
   }
 
   // ============ RESEND OTP ============
-  Future<bool> resendOtp() async {
-    if (_pendingEmail == null) {
+  Future<bool> resendOtp({String? email}) async {
+    final targetEmail = email ?? _pendingEmail;
+
+    if (targetEmail == null) {
       _setError('Email not found. Please try again.');
       return false;
     }
@@ -176,8 +188,9 @@ class AuthProvider with ChangeNotifier {
     _clearError();
 
     try {
-      final response = await _authService.resendOtp(_pendingEmail!);
+      final response = await _authService.resendOtp(targetEmail);
       if (response.success) {
+        _pendingEmail = targetEmail;
         return true;
       } else {
         _setError(response.message);
@@ -239,10 +252,12 @@ class LoginResult {
   final bool success;
   final bool needsVerification;
   final String? message;
+  final String? email;
 
   LoginResult({
     required this.success,
     this.needsVerification = false,
     this.message,
+    this.email,
   });
 }
