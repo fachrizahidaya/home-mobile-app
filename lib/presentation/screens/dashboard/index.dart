@@ -16,9 +16,9 @@ class _MemberDashboardScreenState extends State<MemberDashboardScreen> {
 
   final List<Widget> _pages = [
     const DashboardHomeTab(),
-    const GroceriesTab(),
-    const NotesTab(),
-    const HomeWorkTab(),
+    const ActivityTab(),
+    const NotificationsTab(),
+    const ProfileTab(),
   ];
 
   @override
@@ -147,19 +147,19 @@ class _MemberDashboardScreenState extends State<MemberDashboardScreen> {
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_cart_outlined),
-            activeIcon: Icon(Icons.shopping_cart),
-            label: 'Groceries',
+            icon: Icon(Icons.history_outlined),
+            activeIcon: Icon(Icons.history),
+            label: 'Activity',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.note_outlined),
-            activeIcon: Icon(Icons.note),
-            label: 'Notes',
+            icon: Icon(Icons.notifications_outlined),
+            activeIcon: Icon(Icons.notifications),
+            label: 'Notifications',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.task_outlined),
-            activeIcon: Icon(Icons.task),
-            label: 'Home Work',
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: 'Profile',
           ),
         ],
       ),
@@ -178,6 +178,36 @@ class DashboardHomeTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const Text(
+            'Fitur',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          GridView.count(
+            crossAxisCount: 3,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            children: [
+              _buildFeatureItem(
+                icon: Icons.shopping_cart,
+                title: 'Groceries',
+              ),
+              _buildFeatureItem(
+                icon: Icons.note,
+                title: 'Notes',
+              ),
+              _buildFeatureItem(
+                icon: Icons.task,
+                title: 'Homework',
+              ),
+            ],
+          ),
           const Text(
             'Quick Stats',
             style: TextStyle(
@@ -290,6 +320,48 @@ class DashboardHomeTab extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildFeatureItem({
+    required IconData icon,
+    required String title,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.border.withValues(alpha: 0.5),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () {},
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 32,
+              color: AppColors.primary,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -496,6 +568,39 @@ class HomeWorkTab extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class ActivityTab extends StatelessWidget {
+  const ActivityTab({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text('Activity'),
+    );
+  }
+}
+
+class NotificationsTab extends StatelessWidget {
+  const NotificationsTab({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text('Notifications'),
+    );
+  }
+}
+
+class ProfileTab extends StatelessWidget {
+  const ProfileTab({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text('Profile'),
     );
   }
 }
