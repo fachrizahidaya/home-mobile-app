@@ -15,12 +15,14 @@ class AuthService {
     required String password,
     required String passwordConfirmation,
     required String name,
+    required String username,
   }) async {
     try {
       final response = await _apiService.post(
         AppConstants.registerEndpoint,
         data: {
           'name': name,
+          'username': username,
           'email': email,
           'password': password,
           'password_confirmation': passwordConfirmation,
@@ -140,19 +142,22 @@ class AuthService {
       final authResponse = AuthResponse.fromJson(response.data);
 
       if (authResponse.success) {
-        // User is verified and authenticated
-        if (authResponse.data!['user']['access_token'] != null) {
-          await _storageService
-              .saveToken(authResponse.data!['user']['access_token']);
-          if (authResponse.data != null && authResponse.data!['user'] != null) {
-            final user = User.fromJson(authResponse.data!['user']);
-            await _storageService.saveUser(user);
-          }
+        if (authResponse.token != null) {
+          await _storageService.saveToken(authResponse.token!);
         }
+        if (authResponse.data != null && authResponse.data!['user'] != null) {
+          final userJson =
+              Map<String, dynamic>.from(authResponse.data!['user']);
+          final user = User.fromJson(userJson);
+          await _storageService.saveUser(user);
+        }
+        await _storageService.remove('pending_email');
       } else if (authResponse.requiresVerification) {
         // User exists but not verified - store email for OTP flow
         await _storageService.saveString(
-            'pending_email', authResponse.data!['user']['email']);
+          'pending_email',
+          authResponse.email ?? email,
+        );
       }
 
       return authResponse;

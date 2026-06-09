@@ -1,5 +1,6 @@
 class User {
   final int id;
+  final String name;
   final String username;
   final String email;
   final String role;
@@ -9,6 +10,7 @@ class User {
 
   User({
     required this.id,
+    required this.name,
     required this.username,
     required this.email,
     required this.role,
@@ -18,20 +20,32 @@ class User {
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
+    final createdAt = json['created_at']?.toString();
+    final updatedAt = json['updated_at']?.toString();
+    final emailVerifiedAt = json['email_verified_at'];
+
     return User(
-      id: json['id'] as int,
-      username: json['username'] as String,
-      email: json['email'] as String,
-      role: json['role'] as String? ?? 'member',
-      isVerified: json['is_verified'] as bool? ?? false,
-      createdAt: DateTime.parse(json['created_at']),
-      updatedAt: DateTime.parse(json['updated_at']),
+      id: json['id'] is int
+          ? json['id'] as int
+          : int.tryParse(json['id']?.toString() ?? '') ?? 0,
+      name: json['name']?.toString() ?? '',
+      username: json['username']?.toString() ?? json['name']?.toString() ?? '',
+      email: json['email']?.toString() ?? '',
+      role: json['role']?.toString() ?? 'member',
+      isVerified: json['is_verified'] == true || emailVerifiedAt != null,
+      createdAt: createdAt != null
+          ? DateTime.tryParse(createdAt) ?? DateTime.now()
+          : DateTime.now(),
+      updatedAt: updatedAt != null
+          ? DateTime.tryParse(updatedAt) ?? DateTime.now()
+          : DateTime.now(),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'name': name,
       'username': username,
       'email': email,
       'role': role,

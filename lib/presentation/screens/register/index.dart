@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:homesync/providers/auth_provider.dart';
 import 'package:homesync/ui/core/constants/theme.dart';
-import 'package:homesync/main.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:provider/provider.dart';
 import '../../../ui/core/constants/app_colors.dart';
 import '../../../utils/utils/validators.dart';
 import '../../widgets/custom_button.dart';
@@ -18,11 +19,10 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-
-  bool _isLoading = false;
 
   @override
   void initState() {
@@ -44,6 +44,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _usernameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -63,20 +64,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isLoading = true);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-    final response = await authService.api.post('/auth/register', {
-      'name': _nameController.text.trim(),
-      'email': _emailController.text.trim(),
-      'password': _passwordController.text,
-      'password_confirmation': _confirmPasswordController.text,
-    });
+    final success = await authProvider.register(
+      name: _nameController.text.trim(),
+      username: _usernameController.text.trim(),
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+      passwordConfirmation: _confirmPasswordController.text,
+    );
 
     if (!mounted) return;
 
-    setState(() => _isLoading = false);
-
-    if (response.success) {
+    if (success) {
       Fluttertoast.showToast(
         msg: 'Registration successful! Please verify OTP sent to your email.',
         backgroundColor: AppColors.success,
@@ -93,7 +93,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
     } else {
       Fluttertoast.showToast(
-        msg: response.message,
+        msg: authProvider.errorMessage ?? 'Registration failed',
         backgroundColor: AppColors.error,
         textColor: AppColors.white,
       );
@@ -102,6 +102,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isLoading = context.watch<AuthProvider>().isLoading;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -153,6 +155,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       keyboardType: TextInputType.name,
                       validator: Validators.validateName,
                       prefixIcon: const Icon(Icons.person_outline,
+                          color: AppColors.textSecondary),
+                    ),
+                    CustomTextField(
+                      controller: _usernameController,
+                      label: 'Username',
+                      hint: 'Enter your username',
+                      keyboardType: TextInputType.text,
+                      validator: Validators.validateUsername,
+                      prefixIcon: const Icon(Icons.alternate_email,
                           color: AppColors.textSecondary),
                     ),
                     CustomTextField(
@@ -212,7 +223,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 CustomButton(
                   text: 'Sign Up',
                   onPressed: _handleRegister,
-                  isLoading: _isLoading,
+                  isLoading: isLoading,
                 ),
 
                 // Login Link

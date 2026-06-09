@@ -16,22 +16,42 @@ class AuthResponse {
   });
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) {
-    final data = json['data'] as Map<String, dynamic>?;
+    final rawData = json['data'];
+    final data = rawData is Map<String, dynamic>
+        ? rawData
+        : rawData is Map
+            ? Map<String, dynamic>.from(rawData)
+            : null;
 
-    final token = data?['access_token'];
+    final user = data?['user'];
+    final userMap = user is Map<String, dynamic>
+        ? user
+        : user is Map
+            ? Map<String, dynamic>.from(user)
+            : null;
 
-    final success = json['success'];
+    final token = json['token'] ??
+        data?['token'] ??
+        data?['access_token'] ??
+        userMap?['access_token'];
+
+    final success = json['success'] == true;
 
     final message = json['message'] ?? json['msg'] ?? '';
 
-    final requiresVerification =
-        json['requires_verification'] ?? json['requiresVerification'] ?? false;
+    final requiresVerification = json['requires_verification'] == true ||
+        json['requiresVerification'] == true ||
+        json['requires_otp'] == true ||
+        json['requiresOtp'] == true;
+
+    final email = json['email'] ?? data?['email'] ?? userMap?['email'];
 
     return AuthResponse(
       success: success,
       message: message,
       data: data,
-      token: token,
+      token: token?.toString(),
+      email: email?.toString(),
       requiresVerification: requiresVerification,
     );
   }
