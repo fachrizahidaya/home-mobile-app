@@ -8,7 +8,7 @@ import 'package:provider/provider.dart';
 import '../../../ui/core/constants/app_colors.dart';
 import '../../../ui/core/constants/app_constants.dart';
 import '../../widgets/custom_button.dart';
-import '../dashboard/index.dart';
+import '../home/index.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   final String email;
@@ -89,7 +89,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (_) => const MemberDashboardScreen()),
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
         (route) => false,
       );
     } else {

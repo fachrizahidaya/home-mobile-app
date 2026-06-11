@@ -9,7 +9,7 @@ import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../register/index.dart';
 import '../verify/index.dart';
-import '../dashboard/index.dart';
+import '../home/index.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -54,7 +54,7 @@ class _LoginScreenState extends State<LoginScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => const MemberDashboardScreen(),
+          builder: (_) => const HomeScreen(),
         ),
       );
     } else if (result.needsVerification == true) {
@@ -127,14 +127,6 @@ class _LoginScreenState extends State<LoginScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             spacing: CustomTheme().vGap('m'),
                             children: [
-                              const Text(
-                                'Welcome Back',
-                                style: TextStyle(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
                               const Text(
                                 'Sign in to continue',
                                 style: TextStyle(
