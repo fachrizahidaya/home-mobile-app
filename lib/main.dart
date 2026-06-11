@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:homesync/api_client.dart';
 import 'package:homesync/auth_service.dart';
+import 'package:homesync/providers/grocery_provider.dart';
 import 'package:homesync/storage_service.dart';
 import 'package:provider/provider.dart';
 import 'ui/core/constants/app_colors.dart';
 import 'providers/auth_provider.dart';
 import 'presentation/screens/login/index.dart';
-import 'presentation/screens/dashboard/index.dart';
+import 'presentation/screens/home/index.dart';
 import 'presentation/screens/verify/index.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
   runApp(const HomeSyncApp());
 }
 
@@ -30,6 +33,7 @@ class HomeSyncApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => GroceryProvider()),
       ],
       child: MaterialApp(
         title: 'HomeSync',
@@ -41,6 +45,15 @@ class HomeSyncApp extends StatelessWidget {
           ),
           useMaterial3: true,
           scaffoldBackgroundColor: AppColors.background,
+          inputDecorationTheme: InputDecorationTheme(
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(
+                12,
+              ),
+            ),
+            filled: true,
+            fillColor: Colors.grey.shade50,
+          ),
           appBarTheme: const AppBarTheme(
             backgroundColor: AppColors.primary,
             foregroundColor: AppColors.white,
@@ -82,7 +95,7 @@ class _SplashScreenState extends State<SplashScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => const MemberDashboardScreen(),
+          builder: (context) => const HomeScreen(),
         ),
       );
     } else if (authProvider.needsVerification &&
