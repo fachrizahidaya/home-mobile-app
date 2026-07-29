@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:homesync/api_client.dart';
 import 'package:homesync/auth_service.dart';
 import 'package:homesync/providers/grocery_provider.dart';
+import 'package:homesync/providers/note_provider.dart';
 import 'package:homesync/storage_service.dart';
 import 'package:provider/provider.dart';
 import 'ui/core/constants/app_colors.dart';
@@ -34,6 +35,7 @@ class HomeSyncApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => GroceryProvider()),
+        ChangeNotifierProvider(create: (_) => NoteProvider()),
       ],
       child: MaterialApp(
         title: 'HomeSync',
